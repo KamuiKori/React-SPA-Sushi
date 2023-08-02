@@ -1,39 +1,54 @@
 import Card from '../Layout/Card';
 import styles from './MealList.module.css'
 import ListItem from './ListItem';
+import { useEffect,useState } from 'react';
 
-const DUMMY_MEALS = [
-    {
-      id: "m1",
-      name: 'Ролл "Наоми"',
-      description:
-        "Сыр Филадельфия, куриное филе, масаго, помидор, огурец, кунжут",
-      price: 11.99,
-    },
-    {
-      id: "m2",
-      name: "Спайс в лососе",
-      description: "Рис, лосось, соус спайс",
-      price: 3.99,
-    },
-    {
-      id: "m3",
-      name: "Суши с угрем",
-      description: "Угорь копченый, соус унаги, кунжут",
-      price: 4.99,
-    },
-    {
-      id: "m4",
-      name: 'Салат "Поке с лососем"',
-      description:
-        "Рис, лосось, огурец, чука, нори, стружка тунца, соус ореховый",
-      price: 7.99,
-    },
-  ];
   
 const MealList = (props) =>{
 
-    const mealList = DUMMY_MEALS.map(meal =><ListItem name={meal.name} key={meal.id} id={meal.id} description={meal.description} price={meal.price}></ListItem>)
+  const [meals,setMeals] = useState([])
+  const [isLoading,setIsLoading] = useState(false);
+  const [httpErrorMessage,setHttpErrorMessage] = useState();
+
+    useEffect(()=>{
+      setIsLoading(true);
+      const fetchMeals = async() =>{
+        const response = await fetch("https://react-train-http-default-rtdb.firebaseio.com/meals.json");
+        if(!response.ok){
+          throw new Error("Получение данных не получилось")
+        }
+        const responseData = await response.json();
+        const loadedMeals = [];
+
+        for(const key in responseData){
+          loadedMeals.push({
+            id:key,
+            name:responseData[key].name,
+            description:responseData[key].description,
+            price:Number(responseData[key].price)
+          })
+        }
+        setMeals(loadedMeals);
+        setIsLoading(false);
+      }
+      try{
+        fetchMeals().catch((err)=>{setIsLoading(false);setHttpErrorMessage(err.message)});
+      }
+      catch(err){
+        setIsLoading(false);
+        setHttpErrorMessage(err.message);
+      }
+    },[]);
+
+    if(isLoading){
+      return <section className={styles.loading}><p>Загрузка данных...</p></section>
+    }
+    if(httpErrorMessage){
+      return <section className={styles.loading}><p>{httpErrorMessage}</p></section>
+    }
+
+
+    const mealList = meals.map(meal =><ListItem name={meal.name} key={meal.id} id={meal.id} description={meal.description} price={meal.price}></ListItem>)
 
 
     return(
